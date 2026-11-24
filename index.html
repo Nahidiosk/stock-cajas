@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stock de cajas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@700;800&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: bodega práctica, directa, como un jefe de bodega ordenado
+   IDEA: etiqueta de caja de cartón kraft con timbres de stencil
+   PICTURE: el tablero de stock: cada tipo de caja como una caja con su nivel
+   COLOUR and TYPE: kraft + tinta café oscura + rojo timbre; Big Shoulders Stencil + Archivo
+   LAYOUT: barra kraft arriba con totales, pestañas, contenido en una columna amplia */
+:root{color-scheme:light dark;
+--bg:light-dark(#f6efe4,#17110b);--card:light-dark(#fffaf2,#231a11);--ink:light-dark(#2b1d10,#f1e4d0);
+--mute:light-dark(#7a6450,#b39d84);--line:light-dark(#e3d4bf,#3a2c1e);--kraft:light-dark(#c9965c,#8a6237);
+--kraftd:light-dark(#a8773f,#6e4d2a);--red:light-dark(#c8341f,#ff6a52);--redbg:light-dark(#fbe3dd,#3d1a13);
+--ok:light-dark(#2f7a3d,#7ccf88);--okbg:light-dark(#e2f1e2,#18301b)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Archivo,system-ui,sans-serif;overflow-x:clip}
+h1,h2,.big{font-family:"Big Shoulders Stencil Display",Impact,sans-serif;letter-spacing:.01em}
+header{background:var(--kraft);color:#1e140a;padding:22px max(5vw,16px) 0;
+ background-image:repeating-linear-gradient(90deg,transparent 0 22px,rgba(0,0,0,.035) 22px 24px)}
+.top{display:flex;flex-wrap:wrap;gap:18px 40px;align-items:flex-end;justify-content:space-between;max-width:1240px;margin:auto}
+h1{margin:0;font-size:clamp(34px,6vw,50px);line-height:1.05;font-weight:800}
+.kpis{display:flex;gap:28px;flex-wrap:wrap}
+.kpi span{display:block;font-size:13px;font-weight:600}
+.kpi b{font:800 40px/1 "Big Shoulders Stencil Display",Impact,sans-serif}
+.kpi.alert b{color:#8f1d0e}
+nav{display:flex;gap:4px;overflow-x:auto;max-width:1240px;margin:18px auto 0}
+nav button{flex:none;border:0;background:transparent;color:#1e140a;font:600 15px Archivo,sans-serif;padding:12px 18px;min-height:44px;border-radius:10px 10px 0 0;cursor:pointer}
+nav button[aria-selected=true]{background:var(--bg);color:var(--ink)}
+main{max-width:1240px;margin:auto;padding:24px max(5vw,16px) 60px}
+.note{font-size:13px;color:var(--mute);margin:0 0 16px}
+.warn{background:var(--redbg);color:var(--red);padding:10px 14px;border-radius:10px;font-size:14px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.box .code{font-size:13px;font-weight:700;color:var(--mute)}
+.box .name{font-weight:600;margin:2px 0 10px}
+.box .big{font-size:52px;font-weight:800;line-height:1}
+.box .unit{font-size:13px;color:var(--mute)}
+.meter{height:10px;background:var(--line);border-radius:6px;margin:12px 0 6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--kraftd);border-radius:6px}
+.low .meter i{background:var(--red)}
+.min{font-size:13px;color:var(--mute);display:flex;justify-content:space-between}
+.stamp{position:absolute;top:14px;right:-6px;transform:rotate(8deg);border:2px solid var(--red);color:var(--red);
+ font:800 16px "Big Shoulders Stencil Display",Impact,sans-serif;padding:2px 10px;border-radius:4px;background:var(--card)}
+.quick{display:flex;gap:8px;margin-top:12px}
+.quick button{flex:1}
+button,.btn{font:600 15px Archivo,sans-serif;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.ghost{background:transparent}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--kraft);outline-offset:2px}
+form,.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;max-width:620px}
+label{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
+input,select{width:100%;font:16px Archivo,sans-serif;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button[aria-pressed=true].in{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.seg button[aria-pressed=true].out{background:var(--redbg);color:var(--red);border-color:var(--red)}
+.msg{font-size:14px;margin-top:12px;min-height:21px}
+.msg.err{color:var(--red)}.msg.okm{color:var(--ok)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:15px}
+th{font-size:13px;color:var(--mute);font-weight:600}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:13px;font-weight:600;padding:2px 10px;border-radius:20px}
+.tag.Entrada{background:var(--okbg);color:var(--ok)}.tag.Salida{background:var(--redbg);color:var(--red)}.tag.Ajuste{background:var(--line);color:var(--ink)}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:14px}
+.bar>div{min-width:180px}
+.del{min-height:36px;padding:0 10px;font-size:13px}
+.diff{font:800 44px/1 "Big Shoulders Stencil Display",Impact,sans-serif;margin:10px 0}
+.empty{padding:30px;text-align:center;color:var(--mute);background:var(--card);border:1px dashed var(--line);border-radius:14px}
+h2{font-size:30px;margin:0 0 4px;font-weight:800}
+.two{display:grid;grid-template-columns:minmax(0,620px) minmax(0,1fr);gap:24px;align-items:start}
+@media(max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.row{grid-template-columns:minmax(0,1fr)}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 12px;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
+@media(prefers-reduced-motion:no-preference){.meter i{transition:width .4s ease}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<header>
+ <div class="top">
+  <h1>Stock de cajas</h1>
+  <div class="kpis">
+   <div class="kpi"><span>Cajas en bodega</span><b id="kTotal">–</b></div>
+   <div class="kpi alert"><span>Tipos a reponer</span><b id="kLow">–</b></div>
+   <div class="kpi"><span>Movimientos hoy</span><b id="kHoy">–</b></div>
+  </div>
+ </div>
+ <nav role="tablist">
+  <button role="tab" data-t="stock" aria-selected="true">Stock</button>
+  <button role="tab" data-t="reg" aria-selected="false">Registrar</button>
+  <button role="tab" data-t="mov" aria-selected="false">Movimientos</button>
+  <button role="tab" data-t="conteo" aria-selected="false">Conteo físico</button>
+  <button role="tab" data-t="prod" aria-selected="false">Tipos de caja</button>
+ </nav>
+</header>
+<main>
+ <div id="status" class="note">Cargando datos…</div>
+
+ <section id="v-stock">
+  <div id="grid" class="grid"></div>
+ </section>
+
+ <section id="v-reg" hidden>
+  <form id="fReg">
+   <h2>Registrar movimiento</h2>
+   <div class="seg" role="group" aria-label="Tipo">
+    <button type="button" class="in" data-tipo="Entrada" aria-pressed="true">+ Entrada</button>
+    <button type="button" class="out" data-tipo="Salida" aria-pressed="false">− Salida</button>
+   </div>
+   <label for="rCod">Tipo de caja</label><select id="rCod" required></select>
+   <div class="row">
+    <div><label for="rCant">Cantidad</label><input id="rCant" type="number" min="1" step="1" inputmode="numeric" required></div>
+    <div><label for="rFecha">Fecha</label><input id="rFecha" type="date" required></div>
+   </div>
+   <div class="row">
+    <div><label for="rResp">Responsable</label><input id="rResp" autocomplete="name"></div>
+    <div><label for="rNota">Nota</label><input id="rNota" placeholder="Ej.: Pedido 1040"></div>
+   </div>
+   <div style="margin-top:18px"><button class="pri" type="submit">Guardar movimiento</button></div>
+   <div id="rMsg" class="msg" role="status"></div>
+  </form>
+ </section>
+
+ <section id="v-mov" hidden>
+  <div class="bar">
+   <div><label for="fCod">Filtrar por caja</label><select id="fCod"></select></div>
+   <div><label for="fTipo">Tipo</label><select id="fTipo"><option value="">Todos</option><option>Entrada</option><option>Salida</option><option>Ajuste</option></select></div>
+  </div>
+  <div id="movWrap"></div>
+ </section>
+
+ <section id="v-conteo" hidden>
+  <div class="two">
+   <form id="fCont">
+    <h2>Conteo físico</h2>
+    <p class="note">Cuenta las cajas en la bodega y compáralas con lo que dice el sistema.</p>
+    <label for="cCod">Tipo de caja</label><select id="cCod"></select>
+    <label for="cCant">Cantidad contada</label><input id="cCant" type="number" min="0" step="1" inputmode="numeric" required>
+    <div class="diff" id="cDiff">–</div>
+    <div class="note" id="cSis"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+     <button class="pri" type="submit">Guardar conteo</button>
+     <button type="button" id="cAdj">Guardar y ajustar stock</button>
+    </div>
+    <div id="cMsg" class="msg" role="status"></div>
+   </form>
+   <div><h2>Historial</h2><div id="contWrap"></div></div>
+  </div>
+ </section>
+
+ <section id="v-prod" hidden>
+  <div class="two">
+   <form id="fProd">
+    <h2 id="pTitle">Nuevo tipo de caja</h2>
+    <div class="row">
+     <div><label for="pCod">Código</label><input id="pCod" required placeholder="CJ-06" pattern="[A-Za-z0-9_\-]+"></div>
+     <div><label for="pNom">Descripción</label><input id="pNom" required placeholder="Caja 50x40x30"></div>
+    </div>
+    <div class="row">
+     <div><label for="pMin">Stock mínimo</label><input id="pMin" type="number" min="0" step="1" required></div>
+     <div><label for="pIni">Stock inicial</label><input id="pIni" type="number" min="0" step="1" required></div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:10px"><button class="pri" type="submit">Guardar</button><button type="button" class="ghost" id="pCancel" hidden>Cancelar</button></div>
+    <div id="pMsg" class="msg" role="status"></div>
+   </form>
+   <div id="prodWrap"></div>
+  </div>
+ </section>
+</main>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmtD=s=>{const p=String(s||'').split('-');return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:esc(s)};
+const num=n=>Number(n||0).toLocaleString('es-CL');
+let P=[],M=[],C=[],db=null,tipo='Entrada',editCod=null;
+
+/* ---------- datos ---------- */
+const stockOf=cod=>{const p=P.find(x=>x.codigo===cod);let s=p?Number(p.inicial||0):0;
+ for(const m of M)if(m.codigo===cod){const q=Number(m.cantidad||0);s+=m.tipo==='Entrada'?q:m.tipo==='Salida'?-q:q}return s};
+async function put(col,id,data){if(db){await db.collection(col).doc(id).set(data)}else{local(col,id,data)}}
+async function del(col,id){if(db){await db.collection(col).doc(id).delete()}else{local(col,id,null)}}
+const KEY='stock-cajas-v1';let hasLS=false;
+function persist(){try{localStorage.setItem(KEY,JSON.stringify({P,M,C}));hasLS=true}catch(e){hasLS=false}}
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem(KEY)||'null');hasLS=true;if(d){P=d.P||[];M=d.M||[];C=d.C||[]}}catch(e){hasLS=false}}
+function local(col,id,data){const arr=col==='productos'?P:col==='movimientos'?M:C;const i=arr.findIndex(x=>x.id===id);
+ if(data===null){if(i>=0)arr.splice(i,1)}else{const o={...data,id};i>=0?arr[i]=o:arr.push(o)}persist();render()}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ---------- render ---------- */
+function render(){
+ const sorted=[...P].sort((a,b)=>String(a.codigo).localeCompare(String(b.codigo)));
+ let total=0,low=0;
+ const cards=sorted.map(p=>{const s=stockOf(p.codigo);total+=s;const mn=Number(p.minimo||0);const isLow=s<=mn;if(isLow)low++;
+  const cap=Math.max(mn*4,s,1);const w=Math.max(0,Math.min(100,s/cap*100));const mw=Math.min(100,mn/cap*100);
+  return `<div class="box ${isLow?'low':''}">${isLow?'<div class="stamp">REPONER</div>':''}
+  <div class="code">${esc(p.codigo)}</div><div class="name">${esc(p.nombre)}</div>
+  <div class="big">${num(s)}</div><div class="unit">cajas</div>
+  <div class="meter" title="Nivel respecto al mínimo"><i style="width:${w}%"></i></div>
+  <div class="min"><span>Mínimo ${num(mn)}</span><span>${isLow?'Bajo mínimo':'OK'}</span></div>
+  <div class="quick"><button data-q="Entrada" data-c="${esc(p.codigo)}">+ Entrada</button><button data-q="Salida" data-c="${esc(p.codigo)}">− Salida</button></div></div>`}).join('');
+ $('#grid').innerHTML=cards||'<div class="empty">Aún no hay tipos de caja. Agrégalos en <b>Tipos de caja</b>.</div>';
+ $('#kTotal').textContent=num(total);$('#kLow').textContent=num(low);
+ $('#kHoy').textContent=num(M.filter(m=>m.fecha===today()).length);
+ const opts=sorted.map(p=>`<option value="${esc(p.codigo)}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join('');
+ for(const id of ['#rCod','#cCod']){const v=$(id).value;$(id).innerHTML=opts;if(v)$(id).value=v}
+ const fv=$('#fCod').value;$('#fCod').innerHTML='<option value="">Todas</option>'+opts;$('#fCod').value=fv;
+ renderMov();renderCont();renderProd(sorted);updDiff();
+}
+function renderMov(){
+ const fc=$('#fCod').value,ft=$('#fTipo').value;
+ const rows=[...M].filter(m=>(!fc||m.codigo===fc)&&(!ft||m.tipo===ft)).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))||(b.ts||0)-(a.ts||0));
+ $('#movWrap').innerHTML=rows.length?`<table class="stack"><thead><tr><th>Fecha</th><th>Caja</th><th>Tipo</th><th style="text-align:right">Cantidad</th><th>Responsable</th><th>Nota</th><th></th></tr></thead><tbody>${
+  rows.map(m=>`<tr><td>${fmtD(m.fecha)}</td><td>${esc(m.codigo)}</td><td><span class="tag ${esc(m.tipo)}">${esc(m.tipo)}</span></td><td class="n">${m.tipo==='Salida'?'−':m.tipo==='Ajuste'&&m.cantidad>0?'+':''}${num(Math.abs(m.cantidad))}</td><td>${esc(m.resp)}</td><td>${esc(m.nota)}</td><td><button class="del ghost" data-dm="${esc(m.id)}">Borrar</button></td></tr>`).join('')}</tbody></table>`
+  :'<div class="empty">No hay movimientos con este filtro.</div>';
+}
+function renderCont(){
+ const rows=[...C].sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,50);
+ $('#contWrap').innerHTML=rows.length?`<table class="stack"><thead><tr><th>Fecha</th><th>Caja</th><th style="text-align:right">Contado</th><th style="text-align:right">Sistema</th><th style="text-align:right">Diferencia</th></tr></thead><tbody>${
+  rows.map(c=>`<tr><td>${fmtD(c.fecha)}</td><td>${esc(c.codigo)}</td><td class="n">${num(c.contado)}</td><td class="n">${num(c.sistema)}</td><td class="n" style="color:${c.dif?'var(--red)':'var(--ok)'}">${c.dif>0?'+':''}${num(c.dif)}</td></tr>`).join('')}</tbody></table>`
+  :'<div class="empty">Todavía no hay conteos.</div>';
+}
+function renderProd(sorted){
+ $('#prodWrap').innerHTML=sorted.length?`<table class="stack"><thead><tr><th>Código</th><th>Descripción</th><th style="text-align:right">Mínimo</th><th style="text-align:right">Inicial</th><th style="text-align:right">Actual</th><th></th></tr></thead><tbody>${
+  sorted.map(p=>`<tr><td>${esc(p.codigo)}</td><td>${esc(p.nombre)}</td><td class="n">${num(p.minimo)}</td><td class="n">${num(p.inicial)}</td><td class="n"><b>${num(stockOf(p.codigo))}</b></td><td><button class="del ghost" data-ep="${esc(p.codigo)}">Editar</button></td></tr>`).join('')}</tbody></table>`:'';
+}
+function updDiff(){
+ const cod=$('#cCod').value;const s=stockOf(cod);const v=$('#cCant').value;
+ $('#cSis').textContent=cod?`Según el sistema hay ${num(s)} cajas.`:'';
+ if(v===''){$('#cDiff').textContent='–';$('#cDiff').style.color='';return}
+ const d=Number(v)-s;$('#cDiff').textContent=d===0?'Cuadra ✓':(d>0?'Sobran ':'Faltan ')+num(Math.abs(d));
+ $('#cDiff').style.color=d===0?'var(--ok)':'var(--red)';
+}
+
+/* ---------- pestañas ---------- */
+function tab(t){document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
+ document.querySelectorAll('main>section').forEach(s=>s.hidden=s.id!=='v-'+t)}
+document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)tab(b.dataset.t)});
+function setTipo(t){tipo=t;document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tipo===t))}
+document.querySelector('.seg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTipo(b.dataset.tipo)});
+$('#grid').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(!b)return;setTipo(b.dataset.q);$('#rCod').value=b.dataset.c;tab('reg');$('#rCant').focus()});
+$('#fCod').addEventListener('change',renderMov);$('#fTipo').addEventListener('change',renderMov);
+$('#cCod').addEventListener('change',updDiff);$('#cCant').addEventListener('input',updDiff);
+$('#rFecha').value=today();
+try{const r=localStorage.getItem('resp');if(r)$('#rResp').value=r}catch(e){}
+
+/* ---------- acciones ---------- */
+const msg=(id,t,ok)=>{const el=$(id);el.textContent=t;el.className='msg '+(ok?'okm':'err')};
+function fail(id,e){msg(id,e&&e.code==='invalid_argument'?'No tienes permiso para guardar cambios aquí.':'No se pudo guardar. Intenta de nuevo.',false)}
+$('#fReg').addEventListener('submit',async e=>{e.preventDefault();
+ const cod=$('#rCod').value,q=Math.round(Number($('#rCant').value));
+ if(!cod)return msg('#rMsg','Primero agrega un tipo de caja.',false);
+ if(!(q>0))return msg('#rMsg','La cantidad debe ser mayor a 0.',false);
+ if(tipo==='Salida'&&q>stockOf(cod))return msg('#rMsg',`Solo hay ${num(stockOf(cod))} cajas de ${cod}. Revisa la cantidad.`,false);
+ const resp=$('#rResp').value.trim();try{localStorage.setItem('resp',resp)}catch(e){}
+ try{await put('movimientos',uid(),{fecha:$('#rFecha').value||today(),codigo:cod,tipo,cantidad:q,resp,nota:$('#rNota').value.trim(),ts:Date.now()});
+  msg('#rMsg',`${tipo} de ${num(q)} cajas ${cod} guardada. Stock actual: ${num(stockOf(cod))}.`,true);
+  $('#rCant').value='';$('#rNota').value=''}catch(err){fail('#rMsg',err)}});
+$('#movWrap').addEventListener('click',async e=>{const b=e.target.closest('[data-dm]');if(!b)return;
+ if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='¿Seguro?';setTimeout(()=>{b.dataset.sure='';b.textContent='Borrar'},3000);return}
+ try{await del('movimientos',b.dataset.dm)}catch(err){}});
+async function saveCount(adjust){
+ const cod=$('#cCod').value,v=$('#cCant').value;
+ if(!cod||v==='')return msg('#cMsg','Elige la caja e ingresa lo contado.',false);
+ const n=Math.round(Number(v)),s=stockOf(cod),d=n-s;
+ try{await put('conteos',uid(),{fecha:today(),codigo:cod,contado:n,sistema:s,dif:d,ts:Date.now()});
+  if(adjust&&d!==0)await put('movimientos',uid(),{fecha:today(),codigo:cod,tipo:'Ajuste',cantidad:d,resp:$('#rResp').value.trim(),nota:'Ajuste por conteo físico',ts:Date.now()});
+  msg('#cMsg',adjust&&d!==0?`Conteo guardado y stock ajustado a ${num(n)}.`:'Conteo guardado.',true);$('#cCant').value='';updDiff()}catch(err){fail('#cMsg',err)}}
+$('#fCont').addEventListener('submit',e=>{e.preventDefault();saveCount(false)});
+$('#cAdj').addEventListener('click',()=>saveCount(true));
+function resetProd(){editCod=null;$('#fProd').reset();$('#pCod').disabled=false;$('#pTitle').textContent='Nuevo tipo de caja';$('#pCancel').hidden=true}
+$('#pCancel').addEventListener('click',resetProd);
+$('#prodWrap').addEventListener('click',e=>{const b=e.target.closest('[data-ep]');if(!b)return;const p=P.find(x=>x.codigo===b.dataset.ep);if(!p)return;
+ editCod=p.codigo;$('#pCod').value=p.codigo;$('#pCod').disabled=true;$('#pNom').value=p.nombre||'';$('#pMin').value=p.minimo??0;$('#pIni').value=p.inicial??0;
+ $('#pTitle').textContent='Editar '+p.codigo;$('#pCancel').hidden=false;$('#pNom').focus()});
+$('#fProd').addEventListener('submit',async e=>{e.preventDefault();
+ const cod=(editCod||$('#pCod').value.trim().toUpperCase());
+ if(!/^[A-Z0-9_\-]+$/.test(cod))return msg('#pMsg','Usa solo letras, números y guiones en el código.',false);
+ if(!editCod&&P.some(p=>p.codigo===cod))return msg('#pMsg','Ese código ya existe.',false);
+ try{await put('productos',cod,{codigo:cod,nombre:$('#pNom').value.trim(),minimo:Math.round(Number($('#pMin').value)),inicial:Math.round(Number($('#pIni').value))});
+  msg('#pMsg',`${cod} guardado.`,true);resetProd()}catch(err){fail('#pMsg',err)}});
+
+/* ---------- conexión ---------- */
+render();
+const st=$('#status');
+(async()=>{
+ try{db=(window.claude&&typeof claude.use==='function')?await claude.use('db'):null}catch(e){db=null}
+ if(!db){loadLocal();render();
+  if(hasLS){st.textContent='Los datos se guardan en este navegador. Usa siempre el mismo equipo y navegador.'}
+  else{st.className='warn';st.textContent='Este navegador no permite guardar datos: puedes probar la app, pero los cambios se perderán al cerrar.'}
+  return}
+ let pending=3;const timer=setTimeout(()=>{st.className='warn';st.textContent='Los datos aún no cargan. Revisa tu conexión.'},10000);
+ const sub=(col,set)=>db.collection(col).onSnapshot(s=>{set(s.docs.map(d=>({...d.data(),id:d.id})));
+  if(!s.metadata.fromCache&&pending>0&&--pending===0){clearTimeout(timer);st.hidden=true}render()},
+  err=>{clearTimeout(timer);st.className='warn';st.textContent='Se perdió la conexión con los datos. Recarga la página más tarde.'});
+ sub('productos',a=>P=a);sub('movimientos',a=>M=a);sub('conteos',a=>C=a);
+})();
+}
+</script>
+</body>
+</html>
