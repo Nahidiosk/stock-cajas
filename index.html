@@ -76,7 +76,7 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 h2{font-size:30px;margin:0 0 4px;font-weight:800}
 .two{display:grid;grid-template-columns:minmax(0,620px) minmax(0,1fr);gap:24px;align-items:start}
 @media(max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:600px){.row{grid-template-columns:minmax(0,1fr)}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 12px;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
+@media(max-width:600px){nav{flex-wrap:wrap;overflow:visible}nav button{padding:10px 12px;font-size:14px;border-radius:10px 10px 0 0}.row{grid-template-columns:minmax(0,1fr)}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 12px;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mute);font-size:13px}.stack td:empty{display:none}}
 @media(prefers-reduced-motion:no-preference){.meter i{transition:width .4s ease}}
 </style>
 <script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
@@ -107,7 +107,7 @@ h2{font-size:30px;margin:0 0 4px;font-weight:800}
  </section>
 
  <section id="v-reg" hidden>
-  <form id="fReg">
+  <form id="fReg" novalidate>
    <h2>Registrar movimiento</h2>
    <div class="seg" role="group" aria-label="Tipo">
     <button type="button" class="in" data-tipo="Entrada" aria-pressed="true">+ Entrada</button>
@@ -137,7 +137,7 @@ h2{font-size:30px;margin:0 0 4px;font-weight:800}
 
  <section id="v-conteo" hidden>
   <div class="two">
-   <form id="fCont">
+   <form id="fCont" novalidate>
     <h2>Conteo físico</h2>
     <p class="note">Cuenta las cajas en la bodega y compáralas con lo que dice el sistema.</p>
     <label for="cCod">Tipo de caja</label><select id="cCod"></select>
@@ -156,15 +156,15 @@ h2{font-size:30px;margin:0 0 4px;font-weight:800}
 
  <section id="v-prod" hidden>
   <div class="two">
-   <form id="fProd">
+   <form id="fProd" novalidate>
     <h2 id="pTitle">Nuevo tipo de caja</h2>
     <div class="row">
-     <div><label for="pCod">Código</label><input id="pCod" required placeholder="CJ-06" pattern="[A-Za-z0-9_\-]+"></div>
+     <div><label for="pCod">Código <span style="font-weight:400;color:var(--mute)">(opcional)</span></label><input id="pCod" placeholder="Ej.: CJ-06" autocapitalize="characters"></div>
      <div><label for="pNom">Descripción</label><input id="pNom" required placeholder="Caja 50x40x30"></div>
     </div>
     <div class="row">
-     <div><label for="pMin">Stock mínimo</label><input id="pMin" type="number" min="0" step="1" required></div>
-     <div><label for="pIni">Stock inicial</label><input id="pIni" type="number" min="0" step="1" required></div>
+     <div><label for="pMin">Stock mínimo</label><input id="pMin" type="number" min="0" step="1" inputmode="numeric" value="0"></div>
+     <div><label for="pIni">Stock inicial</label><input id="pIni" type="number" min="0" step="1" inputmode="numeric" value="0"></div>
     </div>
     <div style="margin-top:18px;display:flex;gap:10px"><button class="pri" type="submit">Guardar</button><button type="button" class="ghost" id="pCancel" hidden>Cancelar</button></div>
     <div id="pMsg" class="msg" role="status"></div>
@@ -206,7 +206,7 @@ function render(){
   <div class="meter" title="Nivel respecto al mínimo"><i style="width:${w}%"></i></div>
   <div class="min"><span>Mínimo ${num(mn)}</span><span>${isLow?'Bajo mínimo':'OK'}</span></div>
   <div class="quick"><button data-q="Entrada" data-c="${esc(p.codigo)}">+ Entrada</button><button data-q="Salida" data-c="${esc(p.codigo)}">− Salida</button></div></div>`}).join('');
- $('#grid').innerHTML=cards||'<div class="empty">Aún no hay tipos de caja. Agrégalos en <b>Tipos de caja</b>.</div>';
+ $('#grid').innerHTML=cards||'<div class="empty"><p>Aún no hay tipos de caja.</p><button class="pri" id="goProd">Agregar mi primera caja</button></div>';
  $('#kTotal').textContent=num(total);$('#kLow').textContent=num(low);
  $('#kHoy').textContent=num(M.filter(m=>m.fecha===today()).length);
  const opts=sorted.map(p=>`<option value="${esc(p.codigo)}">${esc(p.codigo)} · ${esc(p.nombre)}</option>`).join('');
@@ -245,7 +245,7 @@ function tab(t){document.querySelectorAll('nav button').forEach(b=>b.setAttribut
 document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)tab(b.dataset.t)});
 function setTipo(t){tipo=t;document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tipo===t))}
 document.querySelector('.seg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTipo(b.dataset.tipo)});
-$('#grid').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(!b)return;setTipo(b.dataset.q);$('#rCod').value=b.dataset.c;tab('reg');$('#rCant').focus()});
+$('#grid').addEventListener('click',e=>{if(e.target.closest('#goProd')){tab('prod');$('#pNom').focus();return}const b=e.target.closest('[data-q]');if(!b)return;setTipo(b.dataset.q);$('#rCod').value=b.dataset.c;tab('reg');$('#rCant').focus()});
 $('#fCod').addEventListener('change',renderMov);$('#fTipo').addEventListener('change',renderMov);
 $('#cCod').addEventListener('change',updDiff);$('#cCant').addEventListener('input',updDiff);
 $('#rFecha').value=today();
@@ -281,10 +281,14 @@ $('#prodWrap').addEventListener('click',e=>{const b=e.target.closest('[data-ep]'
  editCod=p.codigo;$('#pCod').value=p.codigo;$('#pCod').disabled=true;$('#pNom').value=p.nombre||'';$('#pMin').value=p.minimo??0;$('#pIni').value=p.inicial??0;
  $('#pTitle').textContent='Editar '+p.codigo;$('#pCancel').hidden=false;$('#pNom').focus()});
 $('#fProd').addEventListener('submit',async e=>{e.preventDefault();
- const cod=(editCod||$('#pCod').value.trim().toUpperCase());
- if(!/^[A-Z0-9_\-]+$/.test(cod))return msg('#pMsg','Usa solo letras, números y guiones en el código.',false);
- if(!editCod&&P.some(p=>p.codigo===cod))return msg('#pMsg','Ese código ya existe.',false);
- try{await put('productos',cod,{codigo:cod,nombre:$('#pNom').value.trim(),minimo:Math.round(Number($('#pMin').value)),inicial:Math.round(Number($('#pIni').value))});
+ const nom=$('#pNom').value.trim();
+ if(!nom)return msg('#pMsg','Escribe la descripción de la caja.',false);
+ const mn=Number($('#pMin').value||0),ini=Number($('#pIni').value||0);
+ if(!(mn>=0)||!(ini>=0))return msg('#pMsg','El mínimo y el stock inicial deben ser 0 o más.',false);
+ let cod=editCod||$('#pCod').value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/\s+/g,'-').replace(/[^A-Z0-9_\-]/g,'');
+ if(!cod){let n=P.length+1;do{cod='CJ-'+String(n).padStart(2,'0');n++}while(P.some(p=>p.codigo===cod))}
+ if(!editCod&&P.some(p=>p.codigo===cod))return msg('#pMsg','Ese código ya existe. Usa otro.',false);
+ try{await put('productos',cod,{codigo:cod,nombre:nom,minimo:Math.round(mn),inicial:Math.round(ini)});
   msg('#pMsg',`${cod} guardado.`,true);resetProd()}catch(err){fail('#pMsg',err)}});
 
 /* ---------- conexión ---------- */
